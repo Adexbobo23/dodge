@@ -1,0 +1,225 @@
+async function fetchCryptoData() {
+    try {
+        console.log('Initiating crypto data fetch from CoinGecko...');
+        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=department-of-government-efficiency&vs_currencies=usd&include_24hr_vol=true&include_24hr_change=true&include_market_cap=true');
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('API Response Details:', {
+                status: response.status,
+                statusText: response.statusText,
+                errorBody: errorText
+            });
+            throw new Error(`Network response was not ok: ${response.status} - ${errorText}`);
+        }
+
+        const data = await response.json();
+        
+        if (!data || !data['department-of-government-efficiency']) {
+            throw new Error('Invalid data structure received from API');
+        }
+        
+        const tokenData = data['department-of-government-efficiency'];
+        
+        const price = tokenData.usd;
+        const percentChange24h = tokenData.usd_24h_change || 0;
+        const marketCap = tokenData.usd_market_cap || 0;
+        const volume = tokenData.usd_24h_vol || 0;
+        const volumeChange = 0;
+
+        function updateElement(baseId, value, change = null) {
+            [1, 2].forEach(index => {
+                try {
+                    const element = document.getElementById(`${baseId}-${index}`);
+                    let changeElement;
+                    
+                    if (baseId === 'volume') {
+                        changeElement = document.getElementById(`volume-change-${index}`);
+                    } else if (baseId === 'crypto-price') {
+                        changeElement = document.getElementById(`price-percent-change-${index}`);
+                    } else {
+                        changeElement = document.getElementById(`${baseId}-percent-change-${index}`);
+                    }
+                    
+                    if (!element) {
+                        console.warn(`Element not found: ${baseId}-${index}`);
+                        return;
+                    }
+                    
+                    element.textContent = value;
+                    
+                    if (changeElement && change !== null) {
+                        const isPositive = change >= 0;
+                        const containerDiv = changeElement.parentElement;
+                        if (containerDiv) {
+                            containerDiv.className = isPositive ? 'num-positive' : 'num-negative';
+                            const formattedChange = `${isPositive ? '+' : '-'}${Math.abs(change).toFixed(2)}%`;
+                            changeElement.textContent = formattedChange;
+                        }
+                    }
+                } catch (error) {
+                    console.error(`Error updating element ${baseId}-${index}:`, error);
+                }
+            });
+        }
+
+        updateElement('crypto-price', `$${price.toFixed(5)}`, percentChange24h);
+        updateElement('market-cap', `$${(marketCap / 1_000_000).toFixed(2)}m`, percentChange24h);
+        updateElement('volume', `$${(volume / 1_000_000).toFixed(2)}m`, volumeChange);
+
+    } catch (error) {
+        console.error('Detailed error in fetchCryptoData:', error);
+        
+        const fallbackData = {
+            price: 0.00001,
+            percentChange24h: 0,
+            marketCap: 1000000,
+            volume: 1000000,
+            volumeChange: 0
+        };
+        
+        updateElement('crypto-price', `$${fallbackData.price.toFixed(5)}`, fallbackData.percentChange24h);
+        updateElement('market-cap', `$${(fallbackData.marketCap / 1_000_000).toFixed(2)}m`, fallbackData.percentChange24h);
+        updateElement('volume', `$${(fallbackData.volume / 1_000_000).toFixed(2)}m`, fallbackData.volumeChange);
+        
+        setTimeout(fetchCryptoData, 5000);
+    }
+}
+
+async function fetchDebtData() {
+    try {
+        const response = await fetch('https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/debt_to_penny?sort=-record_date&limit=1');
+        if (!response.ok) throw new Error('Network response not ok');
+        const data = await response.json();
+        const debt = parseFloat(data.data[0].tot_pub_debt_out_amt);
+        
+        updateDebtDisplay(debt);
+    } catch (error) {
+        console.error('Error fetching debt data:', error);
+        const fallbackDebt = 34200000000000;
+        updateDebtDisplay(fallbackDebt);
+    }
+}
+
+async function fetchHoldersData() {
+    try {
+        const response = await fetch('https://agent.dogegov.com/api/holders');
+        if (!response.ok) throw new Error('Network response not ok');
+        const data = await response.json();
+        
+        console.log('Holders API Response:', data);
+        
+        [1, 2].forEach(index => {
+            const holdersElement = document.getElementById(`holders-${index}`);
+            const changeElement = document.getElementById(`holders-change-${index}`);
+            
+            if (holdersElement) {
+                holdersElement.textContent = data.totalHolders.toLocaleString();
+            }
+            
+            if (changeElement) {
+                const ethPercent = ((data.ethereumHolders / data.totalHolders) * 100).toFixed(1);
+                const formattedChange = `ETH: ${ethPercent}%`;
+                changeElement.textContent = formattedChange;
+                const parentDiv = changeElement.parentElement;
+                if (parentDiv) {
+                    parentDiv.className = 'num-positive';
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching holders data:', error);
+        [1, 2].forEach(index => {
+            const holdersElement = document.getElementById(`holders-${index}`);
+            const changeElement = document.getElementById(`holders-change-${index}`);
+            
+            if (holdersElement) holdersElement.textContent = '- -';
+            if (changeElement) changeElement.textContent = '- -';
+        });
+    }
+}
+
+function updateDebtDisplay(debt) {
+    document.querySelectorAll('.ticker-value-up').forEach(element => {
+        const hiddenSpan = element.querySelector('.visually-hidden');
+        const textNode = Array.from(element.childNodes)
+            .find(node => node.nodeType === Node.TEXT_NODE);
+        
+        const formattedDebt = `$${Math.floor(debt).toLocaleString()}`;
+        
+        if (textNode) {
+            textNode.textContent = ` ${formattedDebt}`;
+        } else {
+            element.appendChild(document.createTextNode(` ${formattedDebt}`));
+        }
+    });
+}
+
+function createTickerTemplate(index) {
+    return `
+        <div class="ticker-row-content">
+            <div class="ticker-item">
+                <div class="ticker-content">
+                    <div style="font-weight: 400;" class="ticker-title">US national debt</div>
+                    <span style="font-weight: 400; background-color: #FFE6E4; color: #E61E25;" aria-live="polite" class="ticker-value ticker-value-up">
+                        <span class="visually-hidden">Increased to</span>
+                    </span>
+                </div>
+            </div>
+            <div class="ticker-item">
+                <div style="font-weight: 400;" class="ticker-title">D.O.G.E Price</div>
+                <div class="ticker-content">
+                    <div style="font-weight: 400;" id="crypto-price-${index}" class="ticker-num crypto-price">- -</div>
+                    <div class="num-negative">
+                        <div id="price-percent-change-${index}" class="num-percent price-percent-change">-1.13%</div>
+                    </div>
+                </div>
+            </div>
+            <div class="ticker-item">
+                <div class="ticker-title" style="font-weight: 400;">D.O.G.E Market cap</div>
+                <div class="ticker-content">
+                    <div style="font-weight: 400;" id="market-cap-${index}" class="ticker-num market-cap">- -</div>
+                    <div class="num-negative">
+                        <div id="market-cap-percent-change-${index}" class="num-percent market-cap-percent-change">-1.13%</div>
+                    </div>
+                </div>
+            </div>
+            <div class="ticker-item">
+                <div style="font-weight: 400;" class="ticker-title">D.O.G.E Vol 24Hr</div>
+                <div class="ticker-content">
+                    <div style="font-weight: 400;" id="volume-${index}" class="ticker-num volume">- -</div>
+                    <div id="volume-direction-${index}" class="num-negative">
+                        <div id="volume-change-${index}" class="num-percent volume-change">-1.13%</div>
+                    </div>
+                </div>
+            </div>
+            <div class="ticker-item">
+                <div style="font-weight: 400;" class="ticker-title">D.O.G.E Holders</div>
+                <div class="ticker-content">
+                    <div style="font-weight: 400;" id="holders-${index}" class="ticker-num holders">- -</div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function initTicker() {
+    const tickerContainer = document.querySelector('.ticker-row');
+    if (!tickerContainer) return;
+    tickerContainer.innerHTML = createTickerTemplate(1) + createTickerTemplate(2);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize ticker
+    initTicker();
+    
+    // Initial data fetches
+    fetchCryptoData();
+    fetchDebtData();
+    fetchHoldersData();
+
+    // Set up polling intervals
+    setInterval(fetchCryptoData, 30000);    // Every 30 seconds
+    setInterval(fetchDebtData, 60000);      // Every minute
+    setInterval(fetchHoldersData, 300000);  // Every 5 minutes
+});

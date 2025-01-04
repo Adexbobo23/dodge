@@ -1,0 +1,43 @@
+class SideNav {
+    constructor() {
+        this.targetElement = document.querySelector('.darkbg');
+        this.init();
+    }
+
+    async init() {
+        try {
+            const response = await fetch('sidenav-template.html');
+            const template = await response.text();
+            
+            if (this.targetElement) {
+                this.targetElement.innerHTML = template;
+                this.setActivePage();
+            }
+        } catch (error) {
+            console.error('Error loading navigation:', error);
+        }
+    }
+
+    setActivePage() {
+        const currentPage = window.location.pathname.split('/').pop().replace('.html', '');
+        
+        const navLinks = document.querySelectorAll('.nav-link');
+        navLinks.forEach(link => link.classList.remove('active'));
+        
+        const activeLink = document.querySelector(`[data-page="${currentPage}"]`);
+        if (activeLink) {
+            activeLink.classList.add('active');
+        }
+        
+        if (currentPage === '' || currentPage === 'index') {
+            const portalLink = document.querySelector('[data-page="portal"]');
+            if (portalLink) {
+                portalLink.classList.add('active');
+            }
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    new SideNav();
+});

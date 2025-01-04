@@ -1,0 +1,101 @@
+// Define navigation links and social links
+const navLinks = [
+    { href: 'index.html', text: 'Feed', isActive: true },
+    { href: 'memes.html', text: 'Memes' },
+    { href: 'buy-trade.html', text: 'Exchanges' },
+    { href: 'friends-of-doge.html', text: 'Friends of DOGE' },
+    { href: 'usdebt.html', text: 'US Debt Tracker', isBeta: true },
+    { href: 'spending.html', text: 'US Spend Tracker', isBeta: true },
+    { href: 'national_deficit.html', text: 'US Deficit Tracker', isBeta: true },
+    { href: 'https://agent.dogegov.com/', text: 'Agent ID' }
+  ];
+  
+  const buyLinks = [
+    { 
+      href: 'buy-trade.html',
+      text: 'Buy/Trade $DOGEGOV'
+    }
+  ];
+  
+  const socialLinks = [
+    { href: 'https://x.com/doge_eth_gov', icon: 'x-icon.svg' },
+    { href: 'https://t.me/NewDOGEonETH_CTO', icon: 'tg-icon.svg' },
+    { href: 'https://www.tiktok.com/@dogegov', icon: 'tiktok-icon.svg' },
+    { href: 'https://www.youtube.com/@dogegov', icon: 'yt-logo.svg' },
+    { href: 'https://www.instagram.com/dogegov/', icon: 'insta-icon.svg' }
+  ];
+  
+  // Function to generate nav link HTML
+  function generateNavLink(link) {
+    return `
+      <a class="nav-link${link.isActive ? ' active' : ''}" href="${link.href}" style="${link.style || ''}">
+        ${link.text}
+        ${link.isBeta ? '<span class="beta-tag">beta</span>' : ''}
+        ${link.isComingSoon ? '<span class="beta-tag">coming soon</span>' : ''}
+      </a>
+    `;
+  }
+  
+  // Template function to generate mobile navigation
+  function createMobileNavTemplate() {
+    return `
+      <header class="sidenav-logo-container-mob">
+        <img loading="lazy" src="https://cdn.builder.io/api/v1/image/assets/TEMP/0df26a35714cd1fa0e814389c1fe268a4f057df6d3bc49d73ced99638335c606?placeholderIfAbsent=true&apiKey=5754f594b2f54db7820e6a0f42ede262" class="sidenav-logo" alt="Company logo" />
+        <div id="burger-menu" class="burger-menu" onclick="toggleMenu()">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </header>
+      <div id="full-screen-menu" class="menu-overlay">
+        <nav class="sidenav-links">
+          <div class="sidenav-links-container">
+            <ul class="sidenav-links-wrap">
+              ${navLinks.map(link => generateNavLink(link)).join('')}
+            </ul>
+          </div>
+          <section class="buy-links">
+            ${buyLinks.map(link => `
+              <a class="button-primary" style="color: #000000; font-weight: 400;" href="${link.href}">
+                ${link.text}
+              </a>
+            `).join('')}
+          </section>
+          <div class="social-links">
+            ${socialLinks.map(link => `
+              <a class="icon-link" href="${link.href}" rel="noopener noreferrer" target="_blank">
+                <img class="icon-img" loading="lazy" src="images/${link.icon}"/>
+              </a>
+            `).join('')}
+          </div>
+        </nav>
+      </div>
+    `;
+  }
+  
+  // Initialize mobile navigation
+  function initMobileNav() {
+    const mobileNavContainer = document.querySelector('.mobile-nav-container');
+    if (!mobileNavContainer) return;
+  
+    // Add the mobile navigation HTML
+    mobileNavContainer.innerHTML = createMobileNavTemplate();
+  
+    // Add toggle menu functionality with smooth animation
+    window.toggleMenu = function() {
+      const menu = document.getElementById('full-screen-menu');
+      const burgerMenu = document.getElementById('burger-menu');
+      const menuLinks = menu.querySelectorAll('.nav-link');
+  
+      menu.classList.toggle('active');
+      burgerMenu.classList.toggle('active');
+  
+      // Add index for staggered animation
+      menuLinks.forEach((link, index) => {
+        link.style.setProperty('--index', index);
+      });
+    };
+  }
+  
+  // Start when DOM is loaded
+  document.addEventListener('DOMContentLoaded', initMobileNav);

@@ -1,0 +1,40 @@
+// Array of image sources
+const images = [
+    'memes/1_meme_6.jpg',
+    'memes/1_meme_55.jpg',
+    'memes/meme_48.jpg',
+    'memes/1_meme_36.jpg',
+    'memes/meme_42.jpg',
+    'memes/meme_33.jpg',
+];
+
+// Select the gallery container
+const gallery = document.querySelector('.gallery');
+
+// Create image elements dynamically and append to the gallery
+images.forEach((src, index) => {
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = `Image ${index + 1}`;
+    img.classList.add('meme-gallery-img');
+    if (index === 0) img.classList.add('active'); // Set the first image as active
+    gallery.appendChild(img);
+});
+
+let currentIndex = 0;
+
+function showNextImage() {
+    // Hide the current image
+    const currentImage = gallery.children[currentIndex];
+    currentImage.classList.remove('active');
+
+    // Increment the index to the next image
+    currentIndex = (currentIndex + 1) % images.length; // Loop back to the first image
+
+    // Show the next image
+    const nextImage = gallery.children[currentIndex];
+    nextImage.classList.add('active');
+}
+
+// Start the gallery rotation
+setInterval(showNextImage, 3000); // Change image every 7 seconds
